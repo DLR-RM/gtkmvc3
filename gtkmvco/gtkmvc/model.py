@@ -477,7 +477,7 @@ class Model (Observer):
         *old* the value before the change occured.
         """
         assert(self.__value_notifications.has_key(prop_name))
-        for method, kw in self.__value_notifications[prop_name] :
+        for method, kw in self.__value_notifications[prop_name][:]:
             obs = method.im_self
             # notification occurs checking spuriousness of the observer
             if old != new or obs.accepts_spurious_change():
@@ -512,7 +512,7 @@ class Model (Observer):
         *meth_name* name of the method we are about to call on *instance*.
         """
         assert(self.__instance_notif_before.has_key(prop_name))
-        for method, kw in self.__instance_notif_before[prop_name]:
+        for method, kw in self.__instance_notif_before[prop_name][:]:
             obs = method.im_self
             # notifies the change
             if kw is None: # old style call without name
@@ -549,7 +549,7 @@ class Model (Observer):
         *res* the return value of the method call.
         """
         assert(self.__instance_notif_after.has_key(prop_name))
-        for method, kw in self.__instance_notif_after[prop_name]:
+        for method, kw in self.__instance_notif_after[prop_name][:]:
             obs = method.im_self
             # notifies the change
             if kw is None:  # old style call without name
@@ -586,8 +586,8 @@ class Model (Observer):
         *arg* one arbitrary argument passed to observing methods.
         """
         assert(self.__signal_notif.has_key(prop_name))
-        
-        for method, kw in self.__signal_notif[prop_name]:
+
+        for method, kw in self.__signal_notif[prop_name][:]:
             obs = method.im_self
             # notifies the signal emit
             if kw is None: # old style call, without name
