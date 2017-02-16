@@ -72,9 +72,13 @@ def observed(func):
         assert(isinstance(self, Observable))
 
         self._notify_method_before(self, func.__name__, args, kwargs)
-        res = func(*args, **kwargs)
-        self._notify_method_after(self, func.__name__, res, args, kwargs)
-        return res    
+        try:
+            res = func(*args, **kwargs)
+            self._notify_method_after(self, func.__name__, res, args, kwargs)
+            return res
+        except Exception as e:
+            self._notify_method_after(self, func.__name__, e, args, kwargs)
+            raise
 
     log.logger.warning("Decorator observable.observed is deprecated:"
                        "use Observable.observed instead")
