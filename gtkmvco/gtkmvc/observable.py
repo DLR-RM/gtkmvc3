@@ -43,12 +43,15 @@ class Observable (ObsWrapperBase):
             assert(isinstance(self, Observable))
             
             self._notify_method_before(self, _func.__name__, args, kwargs)
-            res = _func(*args, **kwargs)
-            self._notify_method_after(self, _func.__name__, res, args, kwargs)
-            return res    
+            try:
+                res = _func(*args, **kwargs)
+                self._notify_method_after(self, _func.__name__, res, args, kwargs)
+                return res
+            except Exception as e:
+                self._notify_method_after(self, _func.__name__, e, args, kwargs)
+                raise
 
         return wrapper
-    
 
     def __init__(self):
         ObsWrapperBase.__init__(self)
