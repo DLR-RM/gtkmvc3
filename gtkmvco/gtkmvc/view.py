@@ -47,7 +47,7 @@ if not __glade_is_available__ or not __builder_is_available__:
               (True, False) : "glade is not available, relying on manual and gtk.Builder based views only", 
 }[(__builder_is_available__, __glade_is_available__)])
     pass
-    
+
 import types
 # ----------------------------------------------------------------------
 
@@ -153,6 +153,11 @@ class View (object):
         else:  self.m_topWidget = None
        
         if parent is not None: self.set_parent_view(parent)
+
+        # Depending on the system, the builder(?) does not assign the name from the glade files as name to the widget.
+        # Therefore, we iterate over all widgets and assign the name manually
+        for widget_name in self:
+            self[widget_name].set_name(widget_name)
 
         return
        
