@@ -40,6 +40,15 @@ class ObsWrapperBase (object):
         # inheritance). Each element of the set is a pair (model,
         # property-name)
         self.__models = set()
+        self.__observers = {}
+        return
+
+    def add_observer(self, instance, prop_name, notify_before_function=None, notify_after_function=None):
+        self.__observers[(instance, prop_name)] = (notify_before_function, notify_after_function)
+        return
+
+    def remove_observer(self, instance, prop_name):
+        del self.__observers[(instance, prop_name)]
         return
 
     def __add_model__(self, model, prop_name):
@@ -58,6 +67,12 @@ class ObsWrapperBase (object):
     def __get_models__(self): return self.__models
 
     def _notify_method_before(self, instance, name, args, kwargs):
+
+        for (observer, prop_name), (before_function, after_function) in self.__observers.iteritems():
+            if prop_name == name:
+                if before_function:
+                    before_function(instance, args)
+
         for m,n in self.__get_models__():
             m.notify_method_before_change(n, instance, name,
                                           args, kwargs)
@@ -65,6 +80,12 @@ class ObsWrapperBase (object):
         return
 
     def _notify_method_after(self, instance, name, res_val, args, kwargs):
+
+        for (observer, prop_name), (before_function, after_function) in self.__observers.iteritems():
+            if prop_name == name:
+                if after_function:
+                    after_function(instance, res_val, args)
+
         for m,n in self.__get_models__():
             m.notify_method_after_change(n, instance, name, res_val,
                                          args, kwargs)
