@@ -32,12 +32,12 @@ import gtk, gobject
 import os
 
 class BaseView(View):
-	GLADE_FILE = 'glade/yoman.glade'
 
 	def __init__(self, parent_view=None):
 		View.__init__(self, self.GLADE_FILE, self.TOP_WIDGET, parent=parent_view)
 
 class AppView(BaseView):
+	GLADE_FILE = 'glade/yoman.glade'
 	TOP_WIDGET = 'window_main'
 
 	def __init__(self):
@@ -64,9 +64,11 @@ class BaseTreeView(BaseView):
         
 	
 class MainView(BaseTreeView):
-	TOP_WIDGET = ('treeview_main', 'main_popup')
+	GLADE_FILE = 'glade/window1.glade'
+	TOP_WIDGET = ('treeview_main',)
 
 class NoteView(BaseView):
+	GLADE_FILE = 'glade/window3.glade'
 	TOP_WIDGET = ('viewport_note', 'textview_note', 'entry_title')
 
 	def __init__(self):
@@ -74,6 +76,7 @@ class NoteView(BaseView):
 		self['textview_note'].set_wrap_mode(gtk.WRAP_WORD)
 
 class AppAboutView(BaseView):
+	GLADE_FILE = 'glade/about.glade'
 	TOP_WIDGET = 'aboutdialog'
 
 	def __init__(self, parent_view):

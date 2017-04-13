@@ -47,6 +47,7 @@ class TwoForOne(unittest.TestCase):
         # one string to another. It will first empty itself and emit a signal
         # for that. At this point prop_write raises and the entry is reset. It
         # then "types" the 1 so we end up with 15.
+        # https://bugzilla.gnome.org/show_bug.cgi?id=64998
         if gtk.gtk_version == (2, 10, 4):
             return
         self.v["entry1"].set_text("1")

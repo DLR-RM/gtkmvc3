@@ -66,7 +66,11 @@ class ConverterView (View):
         vbox.pack_end(wid)
         return
 
-    def is_stand_alone(self): return self["window_converter"] is not None
+    def is_stand_alone(self):
+        try:
+            return self["window_converter"] is not None
+        except KeyError:
+            return True
 
     pass # end of class
 # ----------------------------------------------------------------------

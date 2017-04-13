@@ -31,7 +31,7 @@ import gtk
 
 class CurrencyView (View):
     """This is the view for the 'Currencies' dialog"""
-    glade = os.path.join(utils.globals.GLADE_DIR, "converter.glade")
+    glade = os.path.join(utils.globals.GLADE_DIR, "currency.glade")
     top = "table_currency"
 
     def light_name(self, select):

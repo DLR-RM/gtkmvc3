@@ -1,6 +1,10 @@
+.. _OP_log:
+
 =============================
 Logical Observable Properties
 =============================
+
+.. versionadded:: 1.99.1
 
 *Logical* OPs are properties whose values are not necessarily
 stored in the model, but which are read and written by a pair of
@@ -234,3 +238,121 @@ as: ::
 
 Of course, since in naming conventions names *matters*, some names
 in the example had to be adapted.
+
+
+.. _OP_log_deps:
+
+Dependencies among OPs
+----------------------
+
+.. versionadded:: 1.99.2
+
+If the value of a logical OP `p` is calculated out of other OPs, `p`
+*depends* on the other OPs. In the general case, logical OPs depend on
+other OPs which can be both logical and concrete. Of course mutual
+dependencies are not allowed as otherwise there would be an infinite
+loop among them.
+
+For example, a model may contain the absolute temperature (expressed
+in kelvin) as concrete OP, and may have two logical OPs for
+representing the temperature expressed in "celsius" and "fahrenheit",
+whose value can be calculated out of the absolute temperature in
+kelvin::
+
+ from gtkmvc import Model
+ class TemperatureModel (Model):
+   kelvin = 273.15
+   
+   __observables__ = ("kelvin", "celsius", "fahrenheit",)
+   
+   @Model.getter(deps=["kelvin"])
+   def celsius(self): return self.kelvin - 273.15
+
+   @Model.getter(deps=["kelvin"])
+   def fahrenheit(self): return self.kelvin * 9/5.0 - 459.67
+
+   # This could also be equivalently:
+   #@Model.getter(deps=["celsius"])
+   #def fahrenheit(self): return self.celsius * 9/5.0 + 32
+
+
+Now if the temperature (`kelvin`) gets changed, logical values
+`celsius` and `fahrenheit` would change accordingly, as they are
+calculated out of the former. 
+
+However, what happens to the observers? Dependencies among OPs must be
+propagated to the notifications for the observers. In the example,
+changing `kelvin` should raise a notification to the observers of
+`kelvin` OP, but **also** to the observers of `celsius` and
+`fahrenheit` as they values have been (indirectly) changed as well.
+ 
+The framework takes care of handling correctly the notifications, if
+dependencies are specified by the user. Dependencies are declared via
+the keyword argument `deps`:
+
+* In the `getter` decorator when using decorator for defining a
+  logical getter.
+* In the getter method when using the naming convention for defining
+  the logical getter.
+
+In both cases the argument `deps` must be assigned to an `iterable` of
+strings, representing the list of OPs which the logical OP depends on.
+
+In the following example, there are two concrete OPs (`C1` and `C2`)
+and four logical OPs (`L1`, ...,`L4`) whose dependency relations are
+depicted in the figure.
+
+.. _OP_deps_fig:
+
+.. figure:: images/op_deps.png
+   :align: center
+
+   An example of dependencies among OPs
+
+The model may be::
+
+ from gtkmvc import Model
+ class MyModel (Model):
+   C1 = 1
+   C2 = 2
+
+   __observables__ = "C1 C2 L1 L2 L3 L4".split()
+   
+   @Model.getter("L1", "L2", deps=["C1"]) # deps=["C1", "L4"] is an error!
+   def getter_L1L2(self, name):
+      return { "L1": self.C1 + 1,
+               "L2": self.C1 + 2 }[name]
+
+   @Model.getter(deps=["L1", "L2", "C2"])
+   def L3(self):
+      return self.L1 + self.L2 + self.C2
+
+   @Model.getter(deps=["L1", "L2", "C2"])
+   def L3(self):
+      return self.L1 + self.L2 + self.C2
+
+   def get_L4_value(self, deps=["L3", "C2"]):
+      return self.L3 + self.C2
+
+Notice that:
+
+1. When defining the dependencies of an OP, we specify only the
+   neighbors in the dependencies graph, not the whole
+   dependencies. For example for `L4`, dependencies are `(L3, C2)`,
+   and not `(L3, L1, L2, C1, C2)`, as the framework takes care of
+   resolving all the graph dependencies.
+
+2. Circular dependencies are not allowed (depicted with a red array).
+
+3. Spurious dependencies are correctly handled by the framework. For
+   example when `C2` changes, only one notification for `L4` is sent
+   to the observers, even if `L4` depends on `C2` through two paths
+   (directly and through `L3`).
+
+4. We defined the getter of `L4` by using the naming convention
+   `get_<prop_name>_value`. In this case (and for the general
+   `get__value`) to define dependencies it is needed to add a
+   parameter `deps` whose default value is an iterable containing the
+   dependencies names.
+
+   

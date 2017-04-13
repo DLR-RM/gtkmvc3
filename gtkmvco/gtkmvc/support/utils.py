@@ -23,6 +23,7 @@
 
 import inspect
 import os
+import types
 
 def getmembers(_object, _predicate):
     """This is an implementation of inspect.getmembers, as in some versions 
@@ -40,6 +41,31 @@ def getmembers(_object, _predicate):
         pass
     return observers
 
+
+def cast_value(val, totype):
+    """
+    Take a value and return it in a different type. If not possible raise
+    :exc:`TypeError`.
+
+    *val* an arbitrary object.
+
+    *totype* a class, e.g. :class:`str`.
+
+    .. note::
+       Casting the empty string to a numeric type returns zero.
+    """
+    t = type(val)
+    if issubclass(t, totype): return val
+    if issubclass(totype, types.StringType): return str(val)
+    if issubclass(totype, types.UnicodeType): return unicode(val)
+
+    if (issubclass(totype, (types.IntType, types.FloatType)) and 
+        issubclass(t, (types.StringType, types.UnicodeType, 
+                       types.IntType, types.FloatType))):
+            if val: return totype(float(val))
+            else: return totype(0)
+    
+    raise TypeError("Not able to cast " + str(t) + " to " + str(totype))
 
 # ======================================================================
 # This is taken from python 2.6 (os.path.relpath is supported in 2.6)

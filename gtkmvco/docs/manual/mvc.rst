@@ -71,13 +71,13 @@ Controller
  
    A Controller perfectly knows the interfaces of the connected Model
    and View, and knows both the state and presentation (*GUI*)
-   semantics. A Controller is associated to one Model (*use a*
-   relationship), and in the current implementation is associated
-   only to one View (*has a* relationship). A Controller may
-   grow in size, thus it is important to avoid including into the
-   Controller code and information that should resize into the
-   Model. Also Controller can be simplified by decomposing them into
-   sub-controllers, each controlling a subset of the View. 
+   semantics. A Controller is associated to one Model, and to one
+   View, however the Model and the View can be associated to multiple
+   controllers. 
+
+   Controllers tend to grow in size, however they can be decomposed
+   into sub-controllers, each controlling a subset of the View or the
+   Model.
 
 
 Two particular mechanisms make the isolation between Model and
@@ -99,14 +99,17 @@ View be split into sets (not necessarily partitions) and each set is
 controller by a sub-controller.
 
 After a model and a view have been instantiated (model and view are
-*independent*, a controller can be constructed by passing them.
+*independent*), a controller can be constructed by passing them.
 
-From there on, the Controller can access the model, and teh view state
-(the set of contained widgets). When the view registers itself with a
-Controller, all signals are also automatically connected to the
-corresponding methods inside the Controller.  Connection in this case
-is performed by means of an implicit syntax rule, which binds a signal
-name to a corresponding method name.
+From there on, the Controller can access to the model and the view
+state (the set of contained widgets). When the view registers itself
+within a Controller, all signals are also automatically connected to
+the corresponding methods inside the Controller. Connection in this
+case is performed by means of an implicit syntax rule, which binds a
+signal name to a corresponding method name.  
+
+This automatic connection can be done either by following the `glade`
+or `GtkBuilder` specification, or by following a naming convention.
 
 In sections :ref:`VR:D` and :ref:`VR:EX` more details and an example are
 presented, to show how the View registration mechanism can be

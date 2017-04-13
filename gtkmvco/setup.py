@@ -5,8 +5,15 @@
 #
 # ----------------------------------------------------------------------
 
-from distutils.core import setup
+try:
+    from setuptools import setup
+
+except:
+    from distutils.core import setup
+    pass
+
 from gtkmvc import get_version
+
 
 setup(name="python-gtkmvc-dlr",
       version=".".join(map(str, get_version())), 

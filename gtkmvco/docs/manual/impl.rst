@@ -45,7 +45,7 @@ implementation which depends on the application semantics.
      class.
    * Construction of columns and renderers of
      :class:`gtk.TreeView` widgets.
-   * Instantiation of *adapters*.
+   * Instantiation of :ref:`Adapters`.
 
 
 The :ref:`fig:ClassDiagram` gives an overview about a few of the main

@@ -27,10 +27,60 @@ import gtk
 import time
 import new
 
+from gtkmvc.support.utils import cast_value
 from gtkmvc.adapters.default import * 
 from gtkmvc.observer import Observer
 from gtkmvc import Model
 
+class Intermediate(Observer):
+    def __init__(self, model, path, adapter):
+        """
+        *model* is an instance.
+
+        *path* is a list of strings, with the first naming a property of
+        *model*. Its value must have a property named like the second string,
+        and so on.
+
+        *adapter* is an instance. Its widget will be updated every time a
+        property in *path* changes. Currently this only covers assignment.
+        """
+        self.model = model
+        self.prop_name = path[0]
+        self.path = path[1:]
+        self.adapter = adapter
+        self.next = None
+
+        Observer.__init__(self)
+        self.observe(self.update_widget, self.prop_name, assign=True)
+        self.observe_model(model)
+
+        self.create_next()
+
+    def create_next(self):
+        if self.path:
+            self.next = Intermediate(
+                getattr(self.model, self.prop_name), self.path, self.adapter)
+
+    def delete_next(self):
+        if self.next:
+            self.next.delete()
+            self.next = None
+
+    def delete(self):
+        self.relieve_model(self.model)
+        self.delete_next()
+
+    def update_widget(self, model, prop_name, info):
+        self.delete_next()
+        self.create_next()
+        model = info.new
+        for prop_name in self.path:
+            model = getattr(model, prop_name)
+        # Break encapsulation to change the model of our adapter.
+        self.adapter.relieve_model(model)
+        self.adapter._model = model
+        self.adapter.observe_model(model)
+        self.adapter.update_widget()
 
 # ----------------------------------------------------------------------
 class Adapter (Observer):
@@ -40,41 +90,42 @@ class Adapter (Observer):
                  value_error=None,
                  spurious=False, prop_cast=True):
         """
-        Creates a new adapter that handles setting of value of a
-        model single model property when a corresponding widgets set
-        is changed and viceversa when the property is also
-        observable.
-
-        This class handles only assignments to properties. For other
-        kinds of setting (e.g. user-defined classes used as
-        observable properties, containers, etc.) use other types of
-        Adapters derived from this class.
+        Observe one property of one model instance for assignment (and nothing
+        else). After you :meth:`connect_widget` those changes will be
+        propagated to that widget, and vice versa.
         
-        prop_name is the model's property name (as a string). It is
-        possible to use a dotted notation to identify a property
-        contained into a hierarchy of models. For example 'a.b.c'
-        identifies property 'c' into model 'b' inside model 'a',
-        where model 'a' is an attribute of given top level model.
-        Last name must be an observable or non-observable attribute,
-        and previous names (if specified) must all refer to
-        instances of class Model. First name from the left must be
-        the name of a model instance inside the given model.
+        *prop_name* is a string. It may contain dots and will be resolved
+        using Python attribute access on *model*. All objects traversed must
+        be :class:`Model` instances.
+        The last part of the string names a property. Examples::
 
-        prop_{write,read} are two optional functions that apply
-        custom modifications to the value of the property before
-        setting and reading it. Both take a value and must return a
-        transformed value whose type must be compatible with the
-        type of the property.
+         >>> "age"
+         observe("age")
+         observe_model(model)
+
+         >>> "child.age"
+         observe("age")
+         observe_model(model.child)
+
+        .. versionchanged:: 1.99.2
+          Changes to intermediate models used to be ignored.
+
+        *spurious* see superclass.
+
+        *prop_read* is an optional callable. It will be passed the actual
+        value of the model property and must return it in a format suitable
+        for the widget.
         
-        value_error can be a function (or a method) to be called
-        when a ValueError exception occurs while trying to set a
-        wrong value for the property inside the model. The function
-        will receive: the adapter, the property name and the value
-        coming from the widget that offended the model.
-
-        spurious controls if the adapter should receive spurious
-        changes from the model (see spuriousness in class Observer for
-        further information).
+        *prop_write* is the mirror image of *prop_read*.
+        
+        *prop_cast* denotes whether to attempt a cast of the widget value to
+        the type of the previous property value, before passing the result to
+        *prop_write*. You cannot disable this unless you define *prop_write*.
+        
+        *value_error* is an optional callable. It is used when the automatic
+        cast or *prop_write* raise :exc:`ValueError`. It will be passed this
+        adapter, the name of the property we observe (i.e. the last part of
+        *prop_name*) and the value obtained from the widget.
         """
 
         # registration is delayed, as we need to create possible
@@ -97,31 +148,54 @@ class Adapter (Observer):
         return
 
     def get_property_name(self):
-        """Returns the property the adapter is conected to"""
+        """
+        Returns the name of the property we observe.
+        """
         return self._prop_name
 
     def get_widget(self):
-        """Returns the widget the adapter is conected to"""
+        """
+        Returns the widget we are connected to, or None.
+        """
         return self._wid
     
     def connect_widget(self, wid,
                        getter=None, setter=None, 
-                       signal=None, arg=None, update=True):
+                       signal=None, arg=None, update=True,
+                       flavour=None):
 
         """
-        Called when the widget is instantiated, and the adapter is
-        ready to connect the widget and the property inside the
-        observed model. arg is the (optional) argument that will be
-        passed when connecting the signal.
+        Finish set-up by connecting the widget. The model was already
+        specified in the constructor.
+        
+        *wid* is a widget instance.
+        
+        *getter* is a callable. It is passed *wid* and must return its
+        current value.
+        
+        *setter* is a callable. It is passed *wid* and the current value of
+        the model property and must update the widget.
+        
+        *signal* is a string naming the signal to connect to on *wid*. When
+        it is emitted we update the model.
+        
+        *getter*, *setter* and *signal* are optional. Missing values are
+        guessed from *wid* using
+        :meth:`gtkmvc.adapters.default.search_adapter_info`. If nothing is
+        found this raises :exc:`TypeError`.
+        
+        *arg* is an optional value passed to the handler for *signal*. This
+        doesn't do anything unless a subclass overrides the handler.
+        
+        *update* denotes whether to update the widget from the model
+        immediately. Otherwise the widget stays unchanged until the first
+        notification.
 
-        getter and setter are the (optional) methods used
-        for reading and writing the widget's value. When not
-        specified, default getter and setter will be guessed by
-        looking at the widget type the adapter will be connected
-        with. Guessing is carried out by querying information
-        specified into module 'adapters.default'. 
+        *flavour* can be used to select special behaviours about
+         the adaptation when twice or more possibilities are
+         possibly handled for the same widget type. See
+         adapters.default for further information.
 
-        Finally, if update is false, the widget will not be updated
         """
 
         if self._wid_info.has_key(wid):
@@ -130,7 +204,7 @@ class Adapter (Observer):
         wid_type = None
 
         if None in (getter, setter, signal):
-            w = search_adapter_info(wid)
+            w = search_adapter_info(wid, flavour)
             if getter is None: getter = w[GETTER]
             if setter is None:
                 setter = w[SETTER]
@@ -156,17 +230,24 @@ class Adapter (Observer):
         return
         
     def update_model(self):
-        """Forces the property to be updated from the value hold by
-        the widget. This method should be called directly by the
-        user in very unusual conditions."""
-        self._write_property(self._read_widget())
+        """
+        Update the model with the current value from the widget.
+
+        It shouldn't ever be necessary to call this, if you connected to
+        the right signal.
+        """
+        try: val = self._read_widget()
+        except ValueError: pass
+        else: self._write_property(val)
         return
     
     def update_widget(self):
-        """Forces the widget to be updated from the property
-        value. This method should be called directly by the user
-        when the property is not observable, or in very unusual
-        conditions."""
+        """
+        Update the widget with the current value from the model.
+
+        Use this for changes to the property that assignment observation
+        doesn't catch.
+        """
         self._write_widget(self._read_property())
         return
 
@@ -183,6 +264,7 @@ class Adapter (Observer):
         if len(parts) > 1:
             # identifies the model
             models = parts[:-1]
+            Intermediate(model, models, self)
             for name in models:
                 model = getattr(model, name)
                 if not isinstance(model, Model):
@@ -236,8 +318,13 @@ class Adapter (Observer):
         return setattr(self._model, self._prop_name, val)
 
     def _read_property(self, *args):
-        """Returns the (possibly transformed) value that is stored
-        into the property"""
+        """
+        Return the model's current value, using *prop_read* if used in the
+        constructor.
+        
+        *args* is just passed on to :meth:`_get_property`. This does nothing,
+        but may be used in subclasses.
+        """
         if self._prop_read: return self._prop_read(self._get_property(*args))
         return self._get_property(*args)
 
@@ -251,7 +338,7 @@ class Adapter (Observer):
         try: 
             totype = type(self._get_property(*args))
 
-            if self._prop_cast or not self._prop_write:
+            if totype is not types.NoneType and (self._prop_cast or not self._prop_write):
                 val = self._cast_value(val, totype)
             if self._prop_write: val = self._prop_write(val)
 
@@ -271,7 +358,12 @@ class Adapter (Observer):
 
     def _read_widget(self):
         """Returns the value currently stored into the widget, after
-        transforming it accordingly to possibly specified function."""
+        transforming it accordingly to possibly specified function.
+
+        This is implemented by calling the getter provided by the
+        user. This method can raise InvalidValue (raised by the
+        getter) when the value in the widget must not be considered as
+        valid."""
         getter = self._wid_info[self._wid][0]
         return getter(self._wid)
         
@@ -282,8 +374,10 @@ class Adapter (Observer):
         try:
             setter = self._wid_info[self._wid][1]
             wtype = self._wid_info[self._wid][2]
-            if wtype is not None: setter(self._wid, self._cast_value(val, wtype))
-            else: setter(self._wid, val)            
+            if setter:
+                if wtype is not None: setter(self._wid, self._cast_value(val, wtype))
+                else: setter(self._wid, val)
+                pass
         finally:
             self._itsme = False
             pass
@@ -291,19 +385,7 @@ class Adapter (Observer):
         return
          
     def _cast_value(self, val, totype):
-        """Casts given val to given totype. Raises TypeError if not able to cast."""
-        t = type(val)
-        if issubclass(t, totype): return val
-        if issubclass(totype, types.StringType): return str(val)
-        if issubclass(totype, types.UnicodeType): return unicode(val)
-
-        if (issubclass(totype, (types.IntType, types.FloatType)) and 
-            issubclass(t, (types.StringType, types.UnicodeType, 
-                           types.IntType, types.FloatType))):
-                if val: return totype(float(val))
-                else: return totype(0)
-        
-        raise TypeError("Not able to cast " + str(t) + " to " + str(totype))
+        return cast_value(val, totype)
 
 
     # ----------------------------------------------------------------------
@@ -319,7 +401,7 @@ class Adapter (Observer):
     def _on_prop_changed(self):
         """Called by the observation code, when the value in the
         observed property is changed"""
-        if not self._itsme: self.update_widget()
+        if self._wid and not self._itsme: self.update_widget()
         return
 
     pass # end of class Adapter
@@ -431,7 +513,6 @@ class RoUserClassAdapter (UserClassAdapter):
     # ----------------------------------------------------------------------
     # Private methods 
     # ----------------------------------------------------------------------
-    # suggested by Tobias Weber
     def _get_observer_fun(self, prop_name):
         """Restore Adapter's behaviour to make possible to receive
         value change notifications"""

@@ -3,6 +3,8 @@ Test for getter and setter decorators, used in models to define
 logical properties
 """
 
+# THIS IS ON_GOING WORK
+
 import _importer
 from gtkmvc import Model
 
@@ -133,7 +135,7 @@ class LogicalProps(unittest.TestCase):
         for name in MyModel.__observables__:
             self.assert_(hasattr(MyModel, name))
             if name != "prop1":
-                self.assertEqual(type(getattr(MyModel, name)), property)
+                self.assert_(isinstance(getattr(MyModel, name), property))
                 pass
             pass
         return

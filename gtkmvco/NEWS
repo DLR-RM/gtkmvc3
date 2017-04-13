@@ -1,3 +1,47 @@
+* New
+
+  - Change sensitivity to spurious notifications per observing method.
+    You can still set it for a whole Observer subclass.
+
+  - Added pattern matching for observer methods, including '*' to be notified
+    about any property in any kind of model.
+
+  - Optionally use special method names to connect a Controller to a View,
+    instead of specifying handlers in Glade.
+
+  - Properties can be defined as depending on other properties, so that
+    changing one notifies about several.
+
+  - You can now use the automatic type conversion done by adapters anywhere.
+
+  - Optionally update a TreeView when models stored in it change.
+
+  - Optionally connect cell renderers set up in Glade to models stored in a
+    TreeView.
+
+  - Adapt to arbitraty GObject properties.
+
+* Changed
+
+  - Radio buttons or actions are adapted to string properties.
+    You still have to group them yourself.
+
+  - Toggle actions and tool buttons are adapted to boolean properties.
+
+  - Adapters now catch ValueError in widget getters.
+    Use this if you don't want to influence the property value.
+
+  - You can now observe method calls on set() properties.
+
+  - View['non-existing name'] now raises KeyError instead of returning None.
+
+  - Adapting a property string with dots now notifies about changes along
+    the path.
+
+* Fixed
+
+  - No longer raises when you modify a property while setting up an adapter.
+
 **********************************************************************
 * Dec 30 2010                                                        *
 **********************************************************************

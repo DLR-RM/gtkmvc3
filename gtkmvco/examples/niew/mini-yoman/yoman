@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+import os.path; import sys
+niew_dir = os.path.abspath("..")
+top_dir = os.path.dirname(os.path.abspath("../.."))
+sys.path = [niew_dir, top_dir] + sys.path
+
+# Test requirement for pygtk 2.0
+import pygtk
+pygtk.require("2.0")
+
+from yomanlib.models.appmodel import AppModel
+from yomanlib.controllers.appctl import AppCtl
+from yomanlib.views.appview import AppView
+
+model = AppModel()
+view = AppView()
+ctl = AppCtl(model, view)
+
+import gtk
+gtk.main()

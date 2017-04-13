@@ -1,65 +1,130 @@
-# Makefile for building all docs
+# Makefile for Sphinx documentation
+#
 
-DESTDIR = _build
+# You can set these variables from the command line.
+SPHINXOPTS    =
+SPHINXBUILD   = sphinx-build
+PAPER         =
+BUILDDIR      = _build
 
-PDF_SRC = manual/_build/latex/gtkmvc-userman.pdf \
-          tutorial/_build/latex//gtkmvc-tutorial.pdf \
-          quickstart/_build/latex/gtkmvc-quickstart.pdf \
-          api/_build/latex/gtkmvc-reference.pdf
-# ----------------------------------------------------------------------
+# Internal variables.
+PAPEROPT_a4     = -D latex_paper_size=a4
+PAPEROPT_letter = -D latex_paper_size=letter
+ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-HTML_DESTDIR = ${DESTDIR}/html
-PDF_DESTDIR = ${DESTDIR}/pdf
-PDF_DESTS = $(addprefix ${PDF_DESTDIR}/, $(notdir ${PDF_SRC}))
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest
 
-all: pdf html
+help:
+	@echo "Please use \`make <target>' where <target> is one of"
+	@echo "  html       to make standalone HTML files"
+	@echo "  dirhtml    to make HTML files named index.html in directories"
+	@echo "  singlehtml to make a single large HTML file"
+	@echo "  pickle     to make pickle files"
+	@echo "  json       to make JSON files"
+	@echo "  htmlhelp   to make HTML files and a HTML help project"
+	@echo "  qthelp     to make HTML files and a qthelp project"
+	@echo "  devhelp    to make HTML files and a Devhelp project"
+	@echo "  epub       to make an epub"
+	@echo "  latex      to make LaTeX files, you can set PAPER=a4 or PAPER=letter"
+	@echo "  latexpdf   to make LaTeX files and run them through pdflatex"
+	@echo "  text       to make text files"
+	@echo "  man        to make manual pages"
+	@echo "  changes    to make an overview of all changed/added/deprecated items"
+	@echo "  linkcheck  to check all external links for integrity"
+	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
-pdf: ${PDF_DESTS}
+clean:
+	-rm -rf $(BUILDDIR)/*
 
-html: htmldest
+html:
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
-clean: 
-	cd manual && ${MAKE} clean
-	cd tutorial && ${MAKE} clean
-	cd quickstart && ${MAKE} clean 
-	cd api && ${MAKE} clean
+dirhtml:
+	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/dirhtml."
 
-distclean: clean
-	rm -rf ${DESTDIR}
+singlehtml:
+	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)/singlehtml
+	@echo
+	@echo "Build finished. The HTML page is in $(BUILDDIR)/singlehtml."
 
-# --------------------------------------------------------------------
-${PDF_SRC} : pdfbuild
+pickle:
+	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
+	@echo
+	@echo "Build finished; now you can process the pickle files."
 
-pdfbuild:
-	cd manual && ${MAKE} latex && cd _build/latex && ${MAKE} all-pdf
-	cd tutorial && ${MAKE} latex && cd _build/latex && ${MAKE} all-pdf
-	cd quickstart && ${MAKE} latex && cd _build/latex && ${MAKE} all-pdf
-	cd api && ${MAKE} latex && cd _build/latex && ${MAKE} all-pdf
+json:
+	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
+	@echo
+	@echo "Build finished; now you can process the JSON files."
 
-${PDF_DESTS} : ${PDF_SRC} ${PDF_DESTDIR}
-	cp ${PDF_SRC} ${PDF_DESTDIR}/
+htmlhelp:
+	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
+	@echo
+	@echo "Build finished; now you can run HTML Help Workshop with the" \
+	      ".hhp project file in $(BUILDDIR)/htmlhelp."
 
+qthelp:
+	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
+	@echo
+	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
+	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/pygtkmvc.qhcp"
+	@echo "To view the help file:"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/pygtkmvc.qhc"
 
+devhelp:
+	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
+	@echo
+	@echo "Build finished."
+	@echo "To view the help file:"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/pygtkmvc"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/pygtkmvc"
+	@echo "# devhelp"
 
-${PDF_DESTDIR}:
-	mkdir -p ${PDF_DESTDIR}
+epub:
+	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
+	@echo
+	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 
-${HTML_DESTDIR}:
-	mkdir -p ${HTML_DESTDIR}
+latex:
+	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	@echo
+	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
+	@echo "Run \`make' in that directory to run these through (pdf)latex" \
+	      "(use \`make latexpdf' here to do that automatically)."
 
+latexpdf:
+	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	@echo "Running LaTeX files through pdflatex..."
+	make -C $(BUILDDIR)/latex all-pdf
+	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
 
-htmlbuild: 
-	cd manual && ${MAKE} html
-	cd tutorial && ${MAKE} html
-	cd quickstart && ${MAKE} html
-	cd api && ${MAKE} html
+text:
+	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text
+	@echo
+	@echo "Build finished. The text files are in $(BUILDDIR)/text."
 
-htmldest: htmlbuild ${HTML_DESTDIR}
-	rm -rf ${HTML_DESTDIR}/userman
-	cp -r manual/_build/html ${HTML_DESTDIR}/userman
-	rm -rf ${HTML_DESTDIR}/tutorial
-	cp -r tutorial/_build/html ${HTML_DESTDIR}/tutorial
-	rm -rf ${HTML_DESTDIR}/quickstart
-	cp -r quickstart/_build/html ${HTML_DESTDIR}/quickstart
-	rm -rf ${HTML_DESTDIR}/reference
-	cp -r api/_build/html ${HTML_DESTDIR}/reference
+man:
+	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
+	@echo
+	@echo "Build finished. The manual pages are in $(BUILDDIR)/man."
+
+changes:
+	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
+	@echo
+	@echo "The overview file is in $(BUILDDIR)/changes."
+
+linkcheck:
+	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
+	@echo
+	@echo "Link check complete; look for any errors in the above output " \
+	      "or in $(BUILDDIR)/linkcheck/output.txt."
+
+doctest:
+	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
+	@echo "Testing of doctests in the sources finished, look at the " \
+	      "results in $(BUILDDIR)/doctest/output.txt."

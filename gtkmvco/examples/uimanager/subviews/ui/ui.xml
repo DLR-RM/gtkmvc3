@@ -1,0 +1,20 @@
+<ui>
+
+  <menubar name="MainMenuBar">
+    <menu action="action_file">      
+      <menuitem action="action_file_quit"/>
+    </menu>
+  </menubar>
+
+  <toolbar name="MainToolBar">
+    <toolitem action="action_part1_insert"/>
+    <toolitem action="action_part1_clear"/>
+    <separator/>
+    <toolitem action="action_part2_sb_counter"/>
+    <separator/>
+    <toolitem name="Run" action="action_part3_run"/>
+    <separator/>
+    <toolitem action="action_file_quit"/>
+  </toolbar>
+
+</ui>

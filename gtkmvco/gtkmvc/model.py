@@ -31,12 +31,21 @@ from observer import Observer, NTInfo
 from observable import Signal
 from support.log import logger
 from support import decorators
-
-import itertools
+from support.utils import getmembers
 
 # Pass prop_name to this method?
 WITH_NAME = True
 WITHOUT_NAME = False
+
+def count_leaves(x):
+    """
+    Return the number of non-sequence items in a given recursive sequence.
+    """
+    if hasattr(x, 'keys'):
+        x = x.values()
+    if hasattr(x, '__getitem__'):
+        return sum(map(count_leaves, x))
+    return 1
 
 class Model (Observer):
     """
@@ -53,68 +62,93 @@ class Model (Observer):
        the class.
     """
 
-    __metaclass__  = support.metaclasses.ObservablePropertyMeta 
-    __properties__ = {} # override this
+    __metaclass__ = support.metaclasses.ObservablePropertyMeta 
+    __properties__ = {}  # override this
 
-    # this class is used internally and by metaclass only
-    class __accinfo: 
+    # these classes are used internally and by metaclass only
+    class __setinfo: 
         def __init__(self, func, has_args): 
-            self.func = func; self.has_args = has_args
+            self.func = func
+            self.has_args = has_args
+            return
+        pass
+    
+    class __getinfo:
+        def __init__(self, func, has_args, deps=()): 
+            self.func = func
+            self.has_args = has_args
+            self.deps = deps
+            return
         pass
 
     @classmethod
     @decorators.good_decorator_accepting_args
-    def getter(cls, *args):
+    def getter(cls, *args, **kwargs):
         """
         Decorate a method as a logical property getter. Comes in two flavours:
 
-        .. method:: getter()
+        .. method:: getter([deps=(name,...)])
            :noindex:
            
            Uses the name of the method as the property name.
            The method must not require arguments.
 
-        .. method:: getter(one, two, ...)
+        .. method:: getter(one, two, ..., [deps=(name,...)])
            :noindex:
            
            Takes a variable number of strings as the property
-           name(s). The name of the method does not matter.
+           name(s). These may contain wildcards as expanded by :mod:`fnmatch`.
+           The name of the method does not matter.
            The method must take a property name as its sole argument.
+
+        For both, `deps` is an iterable of property names, identifying which
+        are the properties (both logical and concrete) which the
+        logical property depends on.
+
+        .. versionadded:: 1.99.1
+           Introduced the decorator.
+
+        .. versionchanged:: 1.99.2
+           Added optional *deps* parameter.
         """
 
         @decorators.good_decorator
         def __decorator(_func):
             # creates the getters dictionary if needed 
-            _dict = getattr(cls, support.metaclasses.LOGICAL_GETTERS_MAP_NAME, None)
+            _dict = getattr(cls, support.metaclasses.LOGICAL_GETTERS_MAP_NAME, 
+                            None)
             if _dict is None:
                 _dict = dict()
-                setattr(cls, support.metaclasses.LOGICAL_GETTERS_MAP_NAME, _dict)
+                setattr(cls, support.metaclasses.LOGICAL_GETTERS_MAP_NAME, 
+                        _dict)
                 pass
 
-            # names is an array which is set in the outer frame. 
+            # names is an array which is set in the outer frame.
+            # deps is a tuple/list which set int the outer frame
             if 0 == len(names): 
-                if _dict.has_key(_func.__name__):
+                if _func.__name__ in _dict:
                     # error: the name is used multiple times
                     raise ValueError("The same pattern is used multiple times")
-                _dict[_func.__name__] = cls.__accinfo(_func, False)
+                _dict[_func.__name__] = cls.__getinfo(_func, False, deps)
             else: 
                 # annotates getters for all names
                 for name in names: 
-                    if _dict.has_key(name):
+                    if name in _dict:
                         # error: the name is used multiple times
-                        raise ValueError("The same pattern is used multiple times")
-                    _dict[name] = cls.__accinfo(_func, True)
+                        raise ValueError("The same pattern is "
+                                         "used multiple times")
+                    _dict[name] = cls.__getinfo(_func, True, deps)
                 pass
             # here we can return whatever, it will in anycase
             # substituted by the metaclass constructor, to be a
             # property
             return _func
 
-        assert 0 < len(args)
         if 1 == len(args) and isinstance(args[0], types.FunctionType):
             # decorator is used without arguments (args[0] contains
             # the decorated function)
-            names = [] # names is used in __decorator
+            names = []  # names is used in __decorator @UnusedVariable
+            deps = ()  # deps is used in __decorator @UnusedVariable
             return __decorator(args[0])
     
         # Here decorator is used with arguments
@@ -123,11 +157,30 @@ class Model (Observer):
             if not isinstance(arg, types.StringType): 
                 raise TypeError("Arguments of decorator must be strings")
             pass
-        names = args # names is used in __decorator
+
+        # here deps are checked
+        _deps = kwargs.get(support.metaclasses.KWARG_NAME_DEPS, ())
+        if not hasattr(_deps, '__iter__'):
+                raise TypeError("Keyword argument '%s' must be an iterable" % 
+                                support.metaclasses.KWARG_NAME_DEPS)
+        for dep in _deps:
+            if not isinstance(dep, types.StringType): 
+                raise TypeError("Elements of keyword argument "
+                                "'%s' must be strings" % \
+                                support.metaclasses.KWARG_NAME_DEPS)
+            pass
+        # deps is the only supported keyword argument
+        unsupported = set(kwargs) - set((support.metaclasses.KWARG_NAME_DEPS,))
+        if unsupported:
+            logger.warn("%s are unrecognized keyword arguments" % \
+                        str(unsupported))
+            pass
+
+        names = args  # names is used in __decorator
+        deps = _deps  # deps is used in __decorator
 
         return __decorator
     # ----------------------------------------------------------------------
-
 
     @classmethod
     @decorators.good_decorator_accepting_args
@@ -142,7 +195,7 @@ class Model (Observer):
            Uses the name of the method as the property name.
            The method must take one argument, the new value.
 
-        .. method:: getter(one, two, ...)
+        .. method:: setter(one, two, ...)
            :noindex:
            
            Takes a variable number of strings as the property
@@ -153,25 +206,28 @@ class Model (Observer):
         @decorators.good_decorator
         def __decorator(_func):
             # creates the setters dictionary if needed 
-            _dict = getattr(cls, support.metaclasses.LOGICAL_SETTERS_MAP_NAME, None)
+            _dict = getattr(cls, support.metaclasses.LOGICAL_SETTERS_MAP_NAME, 
+                            None)
             if _dict is None:
                 _dict = dict()
-                setattr(cls, support.metaclasses.LOGICAL_SETTERS_MAP_NAME, _dict)
+                setattr(cls, support.metaclasses.LOGICAL_SETTERS_MAP_NAME, 
+                        _dict)
                 pass
 
             # names is an array which is set in the outer frame. 
             if 0 == len(names): 
-                if _dict.has_key(_func.__name__):
+                if _func.__name__ in _dict:
                     # error: the name is used multiple times
                     raise ValueError("The same pattern is used multiple times")
-                _dict[_func.__name__] = cls.__accinfo(_func, False)
+                _dict[_func.__name__] = cls.__setinfo(_func, False)
             else: 
                 # annotates getters for all names
                 for name in names: 
-                    if _dict.has_key(name):
+                    if name in _dict:
                         # error: the name is used multiple times
-                        raise ValueError("The same pattern is used multiple times")
-                    _dict[name] = cls.__accinfo(_func, True)
+                        raise ValueError("The same pattern is used "
+                                         "multiple times")
+                    _dict[name] = cls.__setinfo(_func, True)
                     pass
                 pass
 
@@ -180,11 +236,10 @@ class Model (Observer):
             # property
             return _func
 
-        assert 0 < len(args)
         if 1 == len(args) and isinstance(args[0], types.FunctionType):
             # decorator is used without arguments (args[0] contains
             # the decorated function)
-            names = [] # names is used in __decorator
+            names = []  # names is used in __decorator @UnusedVariable
             return __decorator(args[0])
     
         # Here decorator is used with arguments
@@ -193,16 +248,15 @@ class Model (Observer):
             if not isinstance(arg, types.StringType): 
                 raise TypeError("Arguments of decorator must be strings")
             pass
-        names = args # names is used in __decorator
+        names = args  # names is used in __decorator
         return __decorator
     # ----------------------------------------------------------------------
-
 
     def __init__(self):
         Observer.__init__(self)
         
         self.__observers = []
-
+        
         # keys are properties names, values are pairs (method,
         # kwargs|None) inside the observer. kwargs is the keyword
         # argument possibly specified when explicitly defining the
@@ -215,51 +269,137 @@ class Model (Observer):
         self.__instance_notif_before = {}
         self.__instance_notif_after = {}
         self.__signal_notif = {}
-        
+
         for key in self.get_properties(): self.register_property(key)
+
+        # here OPs dependencies are reversed and pre-calculated
+        self._calculate_logical_deps()
+
+        # this stack is used to avoid spurious multiple notifications
+        # which can happen otherwise when logical properties are
+        # involved.
+        self._notify_stack = [] 
+        return
+
+    def _has_observer(self):
+        return bool(count_leaves((self.__value_notifications,
+            self.__instance_notif_before, self.__instance_notif_after,
+            self.__signal_notif)))
+
+    def _calculate_logical_deps(self):
+        """Internal service which calculates dependencies information
+        based on those given with getters.
+        
+        The graph has to be reversed, as the getter tells that a
+        property depends on a set of others, but the model needs to
+        know how has to be notified (i.e. needs to know which OP is
+        affected by an OP).  Only proximity of edges is considered,
+        the rest is demanded at runtime)
+
+        Result is stored inside internal dict __log_prop_deps which
+        represents the dependencies graph.
+        """        
+        self.__log_prop_deps = {}  # the result goes here
+
+        # this is used in messages
+        _mod_cls = "%s.%s" % (self.__class__.__module__, 
+                              self.__class__.__name__)
+
+        logic_ops = ((name, opr.deps)
+                     for name, opr in getmembers(type(self),\
+  lambda x: isinstance(x, support.metaclasses.ObservablePropertyMeta.LogicalOP)
+                                                ))
+        # reverses the graph
+        for name, deps in logic_ops:
+            for dep in deps:
+                if not self.has_property(dep):
+                    raise ValueError("In class %s dependencies of logical "
+                                     "property '%s' refer non-existant "
+                                     "OP '%s'" % (_mod_cls, name, dep))
+                rdeps = self.__log_prop_deps.get(dep, [])
+                # name must appear only once in DAG
+                assert name not in rdeps 
+                rdeps.append(name)
+                self.__log_prop_deps[dep] = rdeps
+                pass
+            pass
+        # emits debugging info about dependencies
+        for name, rdeps in self.__log_prop_deps.iteritems():
+            logger.debug("In class %s changes to OP %s affects "
+                         "logical OPs: %s",
+                         _mod_cls, name, ", ".join(rdeps))
+            pass
+
+        # --------------------------------------------------
+        # Here the graph is checked to be a DAG
+        # --------------------------------------------------
+        graph = dict((prop, frozenset(deps))
+                     for prop, deps in self.__log_prop_deps.iteritems())
+
+        # makes the graph total
+        graph.update((prop, frozenset())
+                     for prop in reduce(set.union, 
+                                        map(set, graph.values()),
+                                        set()) - set(graph.keys()))
+        # DFS searching for leaves
+        while True:
+            leaves = frozenset(prop for prop, deps in graph.iteritems() 
+                               if not deps)
+            if not leaves: break
+            # remove leaves from graph
+            graph = dict((prop, (deps - leaves))
+                         for prop, deps in graph.iteritems()
+                         if prop not in leaves)
+            pass
+
+        # here remaining vertex are in a loop (over-approximated)
+        if graph: 
+            raise ValueError("In class %s found a loop among logical OPs: %s"\
+                                 % (_mod_cls, ", ".join(graph.keys())))
+
+        # here the graph is a DAG
         return
 
     def register_property(self, name):
-        """Registers an existing property to be monitored, and sets
-        up notifiers for notifications"""
-        if not self.__value_notifications.has_key(name): 
+        """Registers an existing property to be monitored, and sets up
+        notifiers for notifications."""
+        
+        if name not in self.__value_notifications:
             self.__value_notifications[name] = []
             pass
         
         # registers observable wrappers
-        prop = getattr(self, "_prop_%s" % name, None)
-            
+        prop = self.__get_prop_value(name)
+        
         if isinstance(prop, ObsWrapperBase):
             prop.__add_model__(self, name)
 
             if isinstance(prop, Signal):
-                if not self.__signal_notif.has_key(name):
+                if name not in self.__signal_notif:
                     self.__signal_notif[name] = []
                     pass
                 pass
             else:
-                if not self.__instance_notif_before.has_key(name):
+                if name not in self.__instance_notif_before:
                     self.__instance_notif_before[name] = []
                     pass
-                if not self.__instance_notif_after.has_key(name):
+                if name not in self.__instance_notif_after:
                     self.__instance_notif_after[name] = []
                     pass
                 pass
             pass
-                
-        return
 
+        return
 
     def has_property(self, name):
         """Returns true if given property name refers an observable
         property inside self or inside derived classes."""
         return name in self.get_properties()
 
-
     def register_observer(self, observer):
         """Register given observer among those observers which are
         interested in observing the model."""
-        if observer in self.__observers: return # not already registered
+        if observer in self.__observers: return  # not already registered
 
         assert isinstance(observer, Observer)
         self.__observers.append(observer)
@@ -269,7 +409,6 @@ class Model (Observer):
         
         return
             
-
     def unregister_observer(self, observer):
         """Unregister the given observer that is no longer interested
         in observing the model."""
@@ -282,7 +421,6 @@ class Model (Observer):
         
         self.__observers.remove(observer) 
         return
-
 
     def _reset_property_notification(self, prop_name, old=None):
         """Called when it has be done an assignment that changes the
@@ -306,7 +444,6 @@ class Model (Observer):
             pass
         return
     
-
     def get_properties(self):
         """
         All observable properties accessible from this instance.
@@ -315,7 +452,6 @@ class Model (Observer):
         """
         return getattr(self, support.metaclasses.ALL_OBS_SET, frozenset())
 
-    
     def __add_observer_notification(self, observer, prop_name):
         """
         Find observing methods and store them for later notification.
@@ -325,14 +461,14 @@ class Model (Observer):
         *prop_name* a string.
 
         This checks for magic names as well as methods explicitly added through
-        decorators or at runtime. In the latter case the type of the notification
-        is inferred from the number of arguments it takes.
+        decorators or at runtime. In the latter case the type of the
+        notification is inferred from the number of arguments it takes.
         """
-        value = getattr(self, "_prop_%s" % prop_name, None)
+        value = self.__get_prop_value(prop_name)
 
         # --- Some services ---
-        def getmeth(format, numargs):
-            name = format % prop_name
+        def getmeth(_format, numargs):
+            name = _format % prop_name
             meth = getattr(observer, name)
             args, varargs, _, _ = inspect.getargspec(meth)
             if not varargs and len(args) != numargs:
@@ -446,17 +582,27 @@ class Model (Observer):
                     yield meth
 
         for meth in side_effect(self.__value_notifications.get(prop_name, ())):
-            logger.debug("Stop calling '%s' after assignment", meth.__name__)
-
+            logger.debug("Stop calling %s.%s after assignment to %s.%s",
+                observer.__class__.__name__, meth.__name__,
+                self.__class__.__name__, prop_name)
+        
         for meth in side_effect(self.__signal_notif.get(prop_name, ())):
-            logger.debug("Stop calling '%s' after emit", meth.__name__)
-
-        for meth in side_effect(self.__instance_notif_before.get(prop_name, ())):
-            logger.debug("Stop calling '%s' before mutation", meth.__name__)
-
-        for meth in side_effect(self.__instance_notif_after.get(prop_name, ())):
-            logger.debug("Stop calling '%s' after mutation", meth.__name__)
-
+            logger.debug("Stop calling %s.%s after emit on %s.%s",
+                observer.__class__.__name__, meth.__name__,
+                self.__class__.__name__, prop_name)
+        
+        for meth in side_effect(
+                        self.__instance_notif_before.get(prop_name, ())):
+            logger.debug("Stop calling %s.%s before mutation of %s.%s",
+                observer.__class__.__name__, meth.__name__,
+                self.__class__.__name__, prop_name)
+        
+        for meth in side_effect(
+                        self.__instance_notif_after.get(prop_name, ())):
+            logger.debug("Stop calling %s.%s after mutation of %s.%s",
+                observer.__class__.__name__, meth.__name__,
+                self.__class__.__name__, prop_name)
+        
         return
 
     def __notify_observer__(self, observer, method, *args, **kwargs):
@@ -465,7 +611,57 @@ class Model (Observer):
         multithreading, or a rpc, etc.)  This implementation simply
         calls the given method with the given arguments"""
         return method(*args, **kwargs)
-    
+
+    def __before_property_value_change__(self, prop_name):
+        """This is called right before the value of a property gets
+        changed, and before a property change notification is
+        sent. This is called before calling
+        notify_property_value_change in order to first collect all the
+        old values of the properties whose value is declared to be
+        dependend on this property. Returns a tuple containing the old
+        values (the values before the assignments to prop_name), among
+        with other information. The returned tuple has to be passed to
+        __after_property_value_change__. All this procedure is done by
+        the setter's code which is generated by the metaclass."""
+
+        return tuple((self, name, getattr(self, name))
+                     for name in self._get_logical_deps(prop_name)
+                     if name not in self._notify_stack)
+
+    def _get_logical_deps(self, prop_name):
+        """Returns an iterator over a sequence of property names,
+        which has to e notified upon any value modification of
+        prop_name. used internally by __before_property_value_change__"""
+
+        if prop_name not in self.__log_prop_deps: return  # stop iteration
+
+        alread_visited = set()
+        to_be_visited = self.__log_prop_deps[prop_name][:]  # copy
+        while to_be_visited:
+            x = to_be_visited.pop(0)
+            if x not in alread_visited:
+                yield x
+                alread_visited.add(x)
+                children = self.__log_prop_deps.get(x, [])
+                to_be_visited += children
+                pass
+            pass
+        return            
+
+    def __after_property_value_change__(self, prop_name, old_vals):
+        """This is called after the value of a property is
+        changed. This is called while calling
+        notify_property_value_change in order to notify all the
+        observers which are interested in observing properties whose
+        value is declared to be dependend on this property. The
+        old_vals tuple is the value returned by the previous call to
+        __before_property_value_change__. All this procedure is done
+        by the setter's code which is generated by the metaclass."""
+        for model, name, val in old_vals:
+            model.notify_property_value_change(name, val, getattr(model, name))
+            pass
+        return
+
     # -------------------------------------------------------------
     #            Notifiers:
     # -------------------------------------------------------------
@@ -476,12 +672,17 @@ class Model (Observer):
 
         *old* the value before the change occured.
         """
-        assert(self.__value_notifications.has_key(prop_name))
+
+        assert prop_name in self.__value_notifications
         for method, kw in self.__value_notifications[prop_name][:]:
             obs = method.im_self
+            # spuriousness (ticket:38) is checked here
+            if kw and "spurious" in kw: spurious = kw['spurious']
+            else: spurious = obs.accepts_spurious_change()
+            
             # notification occurs checking spuriousness of the observer
-            if old != new or obs.accepts_spurious_change():
-                if kw is None: # old style call without name
+            if old != new or spurious:
+                if kw is None:  # old style call without name
                     self.__notify_observer__(obs, method,
                                              self, old, new)
                 elif 'old_style_call' in kw:  # old style call with name
@@ -511,11 +712,11 @@ class Model (Observer):
 
         *meth_name* name of the method we are about to call on *instance*.
         """
-        assert(self.__instance_notif_before.has_key(prop_name))
+        assert prop_name in self.__instance_notif_before
         for method, kw in self.__instance_notif_before[prop_name][:]:
             obs = method.im_self
             # notifies the change
-            if kw is None: # old style call without name
+            if kw is None:  # old style call without name
                 self.__notify_observer__(obs, method,
                                          self, instance,
                                          meth_name, args, kwargs)
@@ -548,7 +749,7 @@ class Model (Observer):
 
         *res* the return value of the method call.
         """
-        assert(self.__instance_notif_after.has_key(prop_name))
+        assert prop_name in self.__instance_notif_after
         for method, kw in self.__instance_notif_after[prop_name][:]:
             obs = method.im_self
             # notifies the change
@@ -585,12 +786,11 @@ class Model (Observer):
 
         *arg* one arbitrary argument passed to observing methods.
         """
-        assert(self.__signal_notif.has_key(prop_name))
-
+        assert prop_name in self.__signal_notif        
         for method, kw in self.__signal_notif[prop_name][:]:
             obs = method.im_self
             # notifies the signal emit
-            if kw is None: # old style call, without name
+            if kw is None:  # old style call, without name
                 self.__notify_observer__(obs, method,
                                          self, arg)
             elif 'old_style_call' in kw:  # old style call with name
@@ -610,56 +810,58 @@ class Model (Observer):
             pass
         return
         
+    def __get_prop_value(self, name):
+        """Returns the property value, given its name."""
+        return getattr(self, "_prop_%s" % name, None)
 
-    pass # end of class Model
+    pass  # end of class Model
 # ----------------------------------------------------------------------
-
 
 
 # ----------------------------------------------------------------------
 class TreeStoreModel (Model, gtk.TreeStore):
     """Use this class as base class for your model derived by
     gtk.TreeStore"""
-    __metaclass__  = support.metaclasses.ObservablePropertyGObjectMeta   
+    __metaclass__ = support.metaclasses.ObservablePropertyGObjectMeta   
     
     def __init__(self, column_type, *args):
         gtk.TreeStore.__init__(self, column_type, *args)
         Model.__init__(self)
         return
-    pass
+    pass  # end of class
 
 
 # ----------------------------------------------------------------------
 class ListStoreModel (Model, gtk.ListStore):
     """Use this class as base class for your model derived by
     gtk.ListStore"""
-    __metaclass__  = support.metaclasses.ObservablePropertyGObjectMeta   
+    __metaclass__ = support.metaclasses.ObservablePropertyGObjectMeta   
     
     def __init__(self, column_type, *args):
         gtk.ListStore.__init__(self, column_type, *args)
         Model.__init__(self)
         return
-    pass
+    pass  # end of class
     
 
 # ----------------------------------------------------------------------
 class TextBufferModel (Model, gtk.TextBuffer):
     """Use this class as base class for your model derived by
     gtk.TextBuffer"""
-    __metaclass__  = support.metaclasses.ObservablePropertyGObjectMeta   
+    __metaclass__ = support.metaclasses.ObservablePropertyGObjectMeta   
     
     def __init__(self, table=None):
         gtk.TextBuffer.__init__(self, table)
         Model.__init__(self)
         return
-    pass
-    
+    pass  # end of class
 
 
 # ----------------------------------------------------------------------
 try: 
-    from sqlobject.inheritance import InheritableSQLObject
-except: pass # sqlobject not available
+    from sqlobject.inheritance import InheritableSQLObject  # @UnresolvedImport
+except: 
+    pass  # sqlobject not available
 else:
     class SQLObjectModel(InheritableSQLObject, Model):
         """
@@ -696,6 +898,6 @@ else:
                 pass
             return
         
-        pass # end of class
+        pass  # end of class
     pass 
 # ----------------------------------------------------------------------

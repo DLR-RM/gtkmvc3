@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<interface>
+  <requires lib="gtk+" version="2.16"/>
+  <!-- interface-naming-policy project-wide -->
+  <object class="GtkWindow" id="window">
+    <property name="window_position">center</property>
+    <property name="default_width">440</property>
+    <property name="default_height">250</property>
+    <child>
+      <object class="GtkScrolledWindow" id="scrolledwindow1">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="hscrollbar_policy">automatic</property>
+        <property name="vscrollbar_policy">automatic</property>
+        <child>
+          <object class="GtkTreeView" id="treeview">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="headers_visible">False</property>
+            <property name="search_column">0</property>
+            <child>
+              <object class="GtkTreeViewColumn" id="name">
+                <property name="title">column</property>
+                <child>
+                  <object class="GtkCellRendererText" id="cellrenderertext1"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -1,3 +1,5 @@
+.. _Adapters:
+
 Adapters
 ********
 
@@ -11,7 +13,8 @@ Introduction
 Previous sections presented the framework and its main feature, that
 is -- to recap it once again -- to provide a full support for
 separating the logical and the presentation sides of an
-application. This separation is featured by the *MVC* pattern and the *Observer* pattern.
+application. This separation is featured by the *MVC* pattern and the
+*Observer* pattern.
 
 Although features are important, *goals* are the driving
 targets that lead the framework development. Most important goals of
@@ -52,7 +55,7 @@ reciprocal loop.
 
 It is in this context that adapters become pretty nifty. 
 
-What are Adapters
+What Adapters are
 =================
 
 *Adapters* are the generalization of the the code that handles
@@ -601,21 +604,28 @@ If a widget is not listed here, it does not mean that it is not
 supported. Instead, it will be enough to specify all required
 parameters when instantiating adapters.
 
-=========================  ========================  =======================
-Widget type                Property type             Notes
-=========================  ========================  =======================
-``gtk.Arrow``              ``gtk.ArrowType``         Current direction
-``gtk.Calendar``           ``datetime`` or ``date``  Selected day
-``gtk.CheckMenuItem``      ``types.BooleanType``     Current toggle state
-``gtk.ColorButton``        ``gtk.gdk.Color``         Selected colour 
-``gtk.ColorSelection``     ``gtk.gdk.Color``         Selected colour
-``gtk.Entry``              String                    Current entry content 
-``gtk.Expander``           ``types.BooleanType``     True if expanded
-``gtk.Label``              String or number          Label content
-``gtk.ToggleButton``       ``types.BooleanType``     Current toggle state
-``gtk.FileChooserButton``  ``types.StringType``      Selected file name
-``gtk.ComboBox``           ``types.IntType``         Model index of the currently selected item
-=========================  ========================  =======================
+=========================  ========================================  =======================
+Widget type                Property type                             Notes
+=========================  ========================================  =======================
+``gtk.Adjustment``         ``types.FloatType``                       Currently set value
+``gtk.Arrow``              ``gtk.ArrowType``                         Current direction
+``gtk.Calendar``           ``datetime``, ``date`` or ``int`` triple  Selected day
+``gtk.CheckMenuItem``      ``types.BooleanType``                     Current toggle state
+``gtk.ColorButton``        ``gtk.gdk.Color``                         Selected colour 
+``gtk.ColorSelection``     ``gtk.gdk.Color``                         Selected colour
+``gtk.ComboBox``           ``types.IntType``                         Model index of the currently selected item
+``gtk.Entry``              ``types.StringType``                      Current entry content 
+``gtk.Expander``           ``types.BooleanType``                     True iff expanded
+``gtk.FileChooserButton``  ``types.StringType``                      Selected file name
+``gtk.Label``              ``type.StringType`` or number             Label content
+``gtk.LinkButton``         ``type.StringType``                       Currently set URI
+``gtk.RadioAction``        ``type.StringType``                       Label of selected action in the radio group
+``gtk.RadioButton``        ``type.StringType``                       Label of selected button in the radio group
+``gtk.ToggleAction``       ``types.BooleanType``                     Current toggle state
+``gtk.ToggleButton``       ``types.BooleanType``                     Current toggle state
+``gtk.ToggleToolButton``   ``types.BooleanType``                     Current toggle state
+=========================  ========================================  =======================
+
 
 Fur further information about default adapters, see module
 ``adapters.default`` and functions

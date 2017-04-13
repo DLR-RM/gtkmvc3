@@ -34,7 +34,7 @@ import gtk
 # ----------------------------------------------------------------------
 class CurrenciesView (View):
     """This is the view for the 'Currencies' dialog"""
-    glade = os.path.join(utils.globals.GLADE_DIR, "converter.glade")
+    glade = os.path.join(utils.globals.GLADE_DIR, "currencies.glade")
     top = "dialog_currencies"
 
     def add_currency_view(self, select=False):

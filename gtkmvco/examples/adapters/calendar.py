@@ -30,7 +30,6 @@
 
 import _importer
 from gtkmvc import Model, Controller, View
-from gtkmvc.adapters.containers import StaticContainerAdapter
 
 import gtk
 

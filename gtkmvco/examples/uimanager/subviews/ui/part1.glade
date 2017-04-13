@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk+" version="2.18"/>
+  <!-- interface-naming-policy project-wide -->
+  <object class="GtkActionGroup" id="agrp_part1">
+    <child>
+      <object class="GtkAction" id="action_part1_insert">
+        <property name="label" translatable="yes">Insert</property>
+        <property name="tooltip" translatable="yes">Insert text in Part1</property>
+        <property name="stock_id">gtk-add</property>
+        <property name="is_important">True</property>
+        <signal name="activate" handler="on_action_part1_insert_activate" swapped="no"/>
+      </object>
+      <accelerator key="F12"/>
+    </child>
+    <child>
+      <object class="GtkAction" id="action_part1_clear">
+        <property name="label" translatable="yes">Clear</property>
+        <property name="tooltip" translatable="yes">Clears text in Part1</property>
+        <property name="stock_id">gtk-clear</property>
+        <property name="is_important">True</property>
+        <signal name="activate" handler="on_action_part1_clear_activate" swapped="no"/>
+      </object>
+    </child>
+  </object>
+  <object class="GtkWindow" id="window1">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkVBox" id="vbox_top">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="spacing">6</property>
+        <child>
+          <object class="GtkHBox" id="hbox1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="label1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Lines:</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label_lines">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">count</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="sw_top">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hscrollbar_policy">automatic</property>
+            <property name="vscrollbar_policy">automatic</property>
+            <property name="shadow_type">etched-in</property>
+            <child>
+              <object class="GtkTextView" id="tv_msg">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

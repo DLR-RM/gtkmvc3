@@ -49,7 +49,7 @@ Mutable containers
 ^^^^^^^^^^^^^^^^^^
 
 The framework *MVC-O* provides a full support for python mutable
-containers like *lists* and *maps*. For example: ::
+containers like *lists*, *sets*, and *maps*. For example: ::
 
  from gtkmvc import Model, Observer
  
@@ -57,6 +57,7 @@ containers like *lists* and *maps*. For example: ::
  class MyModel (Model): 
      myint = 0
      mylist = []
+     myset = set()
      mymap = {}
      __observables__ = ("my*", )
  

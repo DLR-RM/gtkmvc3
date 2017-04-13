@@ -1,0 +1,31 @@
+# German translations for PACKAGE package
+# German messages for PACKAGE.
+# Copyright (C) 2012 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Me <EMAIL@ADDRESS>, 2012.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-01-29 18:49+0100\n"
+"PO-Revision-Date: 2012-01-29 18:50+0100\n"
+"Last-Translator: Me <EMAIL@ADDRESS>\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: red.ui.h:1
+msgid "Blue"
+msgstr "Blau"
+
+#: red.ui.h:2
+msgid "Green"
+msgstr "Grün"
+
+#: red.py:13
+msgid "Yellow"
+msgstr "Gelb"

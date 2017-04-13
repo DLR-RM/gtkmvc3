@@ -32,7 +32,7 @@ import os.path
 class AmountView (View):
     """A view for a single amount"""
     
-    glade = os.path.join(utils.globals.GLADE_DIR, "converter.glade")
+    glade = os.path.join(utils.globals.GLADE_DIR, "amount.glade")
     top = "table_top"
 
     def set_editable(self, flag):

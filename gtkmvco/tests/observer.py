@@ -61,6 +61,15 @@ class Explicit(gtkmvc.Observer):
     def notify_after(self, model, name, info):
         self.after = info.method_name, info.args
 
+class ImplicitExplicit(gtkmvc.Observer):
+    def __init__(self, *arg, **kwargs):
+        self.calls = []
+        gtkmvc.Observer.__init__(self, *arg, **kwargs)
+
+    @gtkmvc.Observer.observe("signal", signal=True)
+    def property_signal_signal_emit(self, *args):
+        self.calls.append(args)
+
 class WithNameModule(gtkmvc.Observer):
     @gtkmvc.Observer.observe("signal", signal=True, old_style_call=True)
     @gtkmvc.Observer.observe("iduna", signal=True, old_style_call=True)
@@ -146,6 +155,42 @@ class DynamicWithName(gtkmvc.Observer):
         if prop_name == "after":
             self.after = info.method_name, info.args
 
+class Trigger(gtkmvc.Observer):
+    def __init__(self, model):
+        self.changes = {}
+        gtkmvc.Observer.__init__(self)
+
+        for name in ("signal", "iduna"):
+            self.observe(self.a, name, signal=True)
+        for name in ("value"):
+            self.observe(self.a, name, assign=True)
+        for name in ("before", "after"):
+            self.observe(self.a, name, before=True, after=True)
+
+        self.observe_model(model)
+
+    def a(self, model, prop_name, info):
+        try:
+            self.changes[id(info)] += 1
+        except KeyError:
+            self.changes[id(info)] = 1
+
+    def unique(self):
+        for key in self.changes:
+            if self.changes[key] > 1:
+                return False
+        return True
+
+class DictionaryTest(unittest.TestCase):
+    def testSafety(self):
+        m = Model()
+        c = Trigger(m)
+        m.signal.emit(4)
+        m.value = 2
+        m.before.append(5)
+        m.after.append(5)
+        self.assertTrue(c.unique)
+
 class SingleTest(unittest.TestCase):
     def setUp(self):
         self.m = Model()
@@ -181,6 +226,15 @@ class SingleTest(unittest.TestCase):
 
     def testWithNameModule(self):
         self.notifications(WithNameModule(self.m))
+
+class DoubleTest(unittest.TestCase):
+    def testImplicitExplicit(self):
+        m = Model()
+        c = ImplicitExplicit(m)
+        self.assertEqual(0, len(c.calls))
+        m.signal.emit("Hello")
+        # Should this be 1?
+        self.assertEqual(2, len(c.calls))
 
 class Dynamic(gtkmvc.Observer):
     def a(self, model, prop_name, info):

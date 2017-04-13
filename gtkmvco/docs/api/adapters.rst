@@ -43,10 +43,14 @@ Modifying immutable properties
 Single Adapter, multiple widgets
 --------------------------------
 
-.. automodule:: gtkmvc.adapters.containers
+.. module:: gtkmvc.adapters.containers
+
+.. autoclass:: StaticContainerAdapter
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. autoclass:: watch_items_in_tree
 
 Connecting automatically
 ------------------------

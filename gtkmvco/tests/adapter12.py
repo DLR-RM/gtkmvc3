@@ -11,7 +11,7 @@ import gtkmvc
 from gtkmvc.adapters.default import __def_adapter as DEF
 
 BAR = (gtk.Toolbar, "style-changed", gtk.Toolbar.get_style,
-    gtk.Toolbar.set_style, gtk.ToolbarStyle)
+    gtk.Toolbar.set_style, gtk.ToolbarStyle, None)
 
 class Model(gtkmvc.Model):
     bar = gtk.TOOLBAR_TEXT

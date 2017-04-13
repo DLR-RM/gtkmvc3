@@ -27,7 +27,7 @@ from gtkmvc.controller import Controller
 from gtkmvc.support.log import logger
 from gtkmvc.support.exceptions import ViewError
 
-import gtk
+import gtk, gobject
 import sys
 
 try:
@@ -69,12 +69,18 @@ class View (object):
            .. deprecated:: 1.99.1
 
         *builder* is a path to an XML file defining widgets in GtkBuilder
-        format.
+        format. It can also be a :class:`gtk.Builder` instance which already
+        contains widgets. This is useful for internationalisation or if you
+        want to break one XML file up into multiple views. Do not use that
+        variant with class attributes, or all instances of this view will share
+        one set of widgets.
 
            .. versionadded:: 1.99.1
 
         *top* is a string or a list of strings containing the names of our top
         level widgets. When using libglade only their children are loaded.
+        This does NOT work with *builder*, each instance will create every
+        window in the file.
 
         *parent* is used to call :meth:`set_parent_view`.
 
@@ -82,8 +88,8 @@ class View (object):
         intend to create widgets later from code.
 
         .. deprecated:: 1.99.1
-           In future versions the functionality will be split into the new class
-           :class:`ManualView` and its child :class:`BuilderView`.
+           In future versions the functionality will be split into the new
+           class :class:`ManualView` and its child :class:`BuilderView`.
         """
         if isinstance(glade, Controller):
             raise NotImplementedError("This version of GTKMVC does not"
@@ -139,9 +145,9 @@ class View (object):
                 self._builder = gtk.Builder()
                 self._builder.add_from_file(_builder)
                 pass
-            pass
+            pass        
         else: self._builder = None # no gtk builder
-            
+
         # top widget list or singleton:
         if _top is not None:
             if len(wids) > 1:
@@ -159,15 +165,16 @@ class View (object):
         for widget_name in self:
             self[widget_name].set_name(widget_name)
 
+        self.builder_pending_callbacks = {}
+        self.builder_connected = False
         return
        
     def __getitem__(self, key):
         """
-        Return the widget named *key*, or ``None``.
+        Return the widget named *key* or raise KeyError.
         
-        .. note::
-        
-           In future versions this will likely change to raise ``KeyError``.
+        .. versionchanged:: 1.99.2
+           Used to return None when the widget wasn't found.
         """
         wid = None
 
@@ -198,6 +205,8 @@ class View (object):
                 pass
             pass
         
+        if not wid:
+            raise KeyError(key)
         return wid
     
     def __setitem__(self, key, wid):
@@ -210,6 +219,7 @@ class View (object):
         self.manualWidgets[key] = wid
         if (self.m_topWidget is None): self.m_topWidget = wid
         return
+
 
     def show(self):
         """
@@ -290,14 +300,68 @@ class View (object):
             pass        
         return None
 
+
+    def __builder_connect_pending_signals(self):
+        """Called internally to actually make the internal gtk.Builder
+        instance connect all signals found in controllers controlling
+        self."""
+        class _MultiHandlersProxy (object):
+            def __init__(self, funcs): self.funcs = funcs
+            def __call__(self, *args, **kwargs):
+                # according to gtk documentation, the return value of
+                # a signal is the return value of the last exectuted
+                # handler.
+                for func in self.funcs: res = func(*args, **kwargs)
+                return res
+            pass # eoc
+        
+        final_dict = {}
+        for n,v in self.builder_pending_callbacks.iteritems():
+            if len(v) == 1: final_dict[n] = v.pop()
+            else: final_dict[n] = _MultiHandlersProxy(v)
+            pass
+
+        self._builder.connect_signals(final_dict)
+
+        self.builder_connected = True
+        self.builder_pending_callbacks = {}
+        return
+
+    def _builder_connect_signals(self, _dict):
+        """Called by controllers which want to autoconnect their
+        handlers with signals declared in internal gtk.Builder.
+
+        This method accumulates handlers, and books signal
+        autoconnection later on the idle of the next occurring gtk
+        loop. After the autoconnection is done, this method cannot be
+        called anymore."""
+        
+        assert not self.builder_connected, "gtk.Builder not already connected"
+
+        if _dict and not self.builder_pending_callbacks:
+            # this is the first call, book the builder connection for
+            # later gtk loop
+            gobject.idle_add(self.__builder_connect_pending_signals)
+
+        for n,v in _dict.iteritems():
+            if n not in self.builder_pending_callbacks:
+                _set = set()
+                self.builder_pending_callbacks[n] = _set
+                pass
+            else: _set = self.builder_pending_callbacks[n]
+            _set.add(v)
+            pass
+
+        return
+
     def __iter__(self):
         """
-        Return an iterator over widgets added with :meth:`__setitem__` and
+        Yield names of widgets added with :meth:`__setitem__` and
         those loaded from XML.
-        
+
         .. note::
-           In case of name conflicts this yields widgets that are not 
-           accessible via :meth:`__getitem__`.
+           In case of name conflicts the result contains duplicates, but only
+           the manually added widget is accessible via :meth:`__getitem__`.
         """
         # precalculates if needed
         self.__extract_autoWidgets()
@@ -330,7 +394,8 @@ class View (object):
                 except TypeError: continue
                 
                 if name in self.autoWidgets and self.autoWidgets[name] != wid:
-                    raise ViewError("Widget '%s' in builder also found in glade specification" % name)
+                    raise ViewError("Widget '%s' in builder also found in "
+                        "glade specification" % name)
 
                 self.autoWidgets[name] = wid
                 pass

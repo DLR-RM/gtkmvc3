@@ -48,8 +48,10 @@ class AboutCtrl (Controller):
 
     def on_scroll(self):
         """Called to scroll text"""
-        sw = self.view['sw_scroller']
-        if sw is None: return False # destroyed!        
+        try:
+            sw = self.view['sw_scroller']
+        except KeyError:
+            return False # destroyed!        
         vadj = sw.get_vadjustment()
         if vadj is None: return False
         val = vadj.get_value()

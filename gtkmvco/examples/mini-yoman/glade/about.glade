@@ -1,0 +1,21 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+
+<glade-interface>
+
+<widget class="GtkAboutDialog" id="aboutdialog">
+  <property name="visible">True</property>
+  <property name="destroy_with_parent">False</property>
+  <property name="name" translatable="yes">Yoman</property>
+  <property name="copyright" translatable="yes">Copyright (C) 2006 by Baruch Even</property>
+  <property name="license" translatable="yes">GPLv2</property>
+  <property name="wrap_license">False</property>
+  <property name="website">http://baruch.ev-en.org/proj/yoman/</property>
+  <property name="website_label" translatable="yes">Yoman Homepage</property>
+  <property name="authors">Baruch Even &lt;baruch@ev-en.org&gt;
+
+Yoman uses the MVC system and it does so easily with gtkvmvc of  Roberto Cavada &lt;roboogle@gmail.com&gt;</property>
+  <property name="translator_credits" translatable="yes" comments="TRANSLATORS: Replace this string with your names, one name per line.">translator-credits</property>
+</widget>
+
+</glade-interface>

@@ -54,7 +54,7 @@ __all__ = ["Model", "TreeStoreModel", "ListStoreModel", "TextBufferModel",
            "observable", "observer", "adapters", # packages
            ]
 
-__version = (1,99,1)
+__version = (1,99,2)
 
 # visible classes
 from model import Model, TreeStoreModel, ListStoreModel, TextBufferModel

@@ -1,6 +1,12 @@
 This directory contains the examples presented in the tutorial.
+The tutorial is split into two steps:
+
+STEP 1
+------
 
 To run the glade-based example:
+
+$> cd step1
 $> python main_glade.py 
 
 To run manually built example:
@@ -11,3 +17,12 @@ $> python main_mixed.py
 
 To run the glade-based that uses an adapter:
 $> python main_glade_adap.py
+
+
+STEP 2
+------
+
+To run the example:
+
+$> cd step2
+$> python main.py

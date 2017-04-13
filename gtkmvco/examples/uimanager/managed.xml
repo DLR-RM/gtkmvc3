@@ -1,0 +1,7 @@
+<ui>
+	<menubar>
+		<menu action="file">
+			<menuitem action="save"/>
+		</menu>
+	</menubar>
+</ui>

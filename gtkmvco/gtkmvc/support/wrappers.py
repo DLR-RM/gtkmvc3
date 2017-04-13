@@ -182,12 +182,22 @@ class ObsListWrapper (ObsSeqWrapper):
             meth = "__%s__" % _m
             assert hasattr(self._obj, meth), "Not found method %s in %s" % (meth, str(type(self._obj)))
             setattr(self.__class__, meth, getattr(self._obj, meth))
-            pass        
+            pass
         return
 
     def __radd__(self, other): return other.__add__(self._obj)
     def __rmul__(self, other): return self._obj.__mul__(other)
     
+    pass #end of class
+
+
+# ----------------------------------------------------------------------
+class ObsSetWrapper (ObsSeqWrapper):
+    def __init__(self, s):
+        methods = ("add", "clear", "discard", "pop", "remove",)
+        ObsSeqWrapper.__init__(self, s, methods)
+        return
+    __hash__ = None # unhashable
     pass #end of class
 
 

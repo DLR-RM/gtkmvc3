@@ -1,3 +1,5 @@
+.. _OP_concrete:
+
 ==============================
 Concrete Observable Properties
 ==============================
@@ -24,6 +26,8 @@ from outside (e.g. from a database).
 
 In the example, ``name``, ``surname`` and ``energy`` are all
 observable, whereas ``status`` is not observable.
+
+.. _OP_concrete_patterns:
 
 Special member ``__observables__`` is a tuple (or a list) of names
 of class attributes that has to be observable. Names can contain

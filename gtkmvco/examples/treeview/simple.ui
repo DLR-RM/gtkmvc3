@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<interface>
+  <requires lib="gtk+" version="2.16"/>
+  <!-- interface-naming-policy project-wide -->
+  <object class="GtkWindow" id="window1">
+  	<property name="visible">True</property>
+    <child>
+      <object class="GtkScrolledWindow" id="scrolledwindow1">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="hscrollbar_policy">automatic</property>
+        <property name="vscrollbar_policy">automatic</property>
+        <child>
+          <object class="GtkTreeView" id="treeview1">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="model">liststore1</property>
+            <child>
+              <object class="GtkTreeViewColumn" id="name">
+                <property name="title">Name</property>
+                <child>
+                  <object class="GtkCellRendererText" id="cellrenderertext1">
+                    <property name="editable">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="age">
+                <property name="title">Age</property>
+                <child>
+                  <object class="GtkCellRendererProgress" id="cellrendererprogress1"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="license">
+                <property name="title">Drivers license</property>
+                <child>
+                  <object class="GtkCellRendererToggle" id="cellrenderertoggle1"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkListStore" id="liststore1">
+    <columns>
+      <column type="PyObject"/>
+    </columns>
+  </object>
+</interface>

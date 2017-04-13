@@ -1,0 +1,15 @@
+<ui>
+	<menubar>
+		<menu action="file_menu">
+			<menuitem action="quit"/>
+		</menu>
+		<menu action="note_menu">
+			<menuitem action="add_note"/>
+			<menuitem action="add_child"/>
+			<menuitem action="delete_note"/>
+		</menu>
+		<menu action="help_menu">
+			<menuitem action="about"/>
+		</menu>
+	</menubar>
+</ui>

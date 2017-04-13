@@ -364,6 +364,23 @@ getter/setter pairs::
 .. note:: You can exploit custom properties values to perform some
           custom actions when a property is read or written.
 
+It is possible to define **dependencies** among logical and concrete
+properties. For example::
+
+ from gtkmvc import Model
+ class MyModel (Model):
+    celsius = 0
+    __observables__ = ("celsius", "fahrenheit")
+
+    @Model.getter(deps=["celsius"])
+    def fahrenheit(self): return self.celsius * 9/5.0 + 32
+    pass
+
+When dependencies are explicitly declared, the framework takes them
+into account automatically when sending notifications. In the
+examples, any observer of `fahrenheit` would be notified even when
+`celsius` gets changed, as `fahrenheit` depends on it.
+
 
 3. Mutable containers
 """""""""""""""""""""
@@ -482,7 +499,10 @@ notifications, presented in the static flavours::
     #    Value change
     # ------------------------------------------------------   
 
-    # common notification for multiple properties:
+    # Common notification for multiple properties.
+    # Notice that this could also be written as     
+    #  @Observer.observe("data[12]", assign=True)
+    # as patterns (like fnmatch) are supported by Observer.observe
     @Observer.observe("data1", assign=True)
     @Observer.observe("data2", assign=True)
     def assign_notification(self, model, prop_name, info):
@@ -606,10 +626,12 @@ Controllers are the most complex structures that are intended to:
 2. Connect one model and one or more views, without making them know.
 3. Observe the model they are connected to.
 4. Provide handlers for gtk signals (declared in the views connected to it)
-5. Setting up widgets that depend on the model. For example setting up
+5. Optionally autoconnects View's widget signals to its methods, with
+   a simple naming convention (new in version 1.99.2).
+6. Setting up widgets that depend on the model. For example setting up
    of ``gtk.TreeView`` whose ``gtk.TreeModel`` lives within the model
    (see :ref:`gtk.TreeView`)
-6. Setting up :ref:`adapters`
+7. Setting up adapters.
 
 This is the typical structure of a controller::
 
@@ -647,7 +669,7 @@ This is the typical structure of a controller::
      # ------------------------------------------------------------
      #      GTK Signal handlers
      # ------------------------------------------------------------
-     def on_button_clicked(self, button):
+     def on_button__clicked(self, button):
          # ...
          return
  
@@ -749,18 +771,23 @@ How does *gtkmvc* click on this architecture?
 3. The controller is responsible for connecting the view parts with the
    model parts.
 
-The view is based on the glade file shown here:
+The view is based on the glade file shown here (in `GtkBuilder` format):
 
 .. image:: images/mvc_glade.png
 
 This is the full code for this example::
 
  import gtk
+
+ # ----------------------------------------------------------------------
  from gtkmvc import View
  class MyView(View):
-    glade = "mvc.glade"
+    builder = "mvc.glade"
     pass # end of class
+ # ----------------------------------------------------------------------
 
+
+ # ----------------------------------------------------------------------
  from gtkmvc import Model
  class MyModel (Model):
     # ...
@@ -773,28 +800,31 @@ This is the full code for this example::
  developing GUI applications with
  Python and the pygtk toolkit."""
         # fills in some data
-    self.text_buf.set_text(text)
+        self.text_buf.set_text(text)
         for n, word in enumerate(text.split()):
             self.list_store.append([n+1,word])
             pass
         return
 
     pass # end of class
+ # ----------------------------------------------------------------------
 
+
+ # ----------------------------------------------------------------------
  from gtkmvc import Controller
  class MyCtrl (Controller):
     # ...
 
     def register_view(self, view):
         text_view = view['textview']
-    # connects the buffer and the text view
-    text_view.set_buffer(self.model.text_buf)
+        # connects the buffer and the text view
+        text_view.set_buffer(self.model.text_buf)
 
-    # connects the treeview to the liststore
-    tv = view['treeview']
+        # connects the treeview to the liststore
+        tv = view['treeview']
         tv.set_model(self.model.list_store)        
 
-    # creates the columns of the treeview                          
+        # creates the columns of the treeview                          
         rend = gtk.CellRendererText()
         col = gtk.TreeViewColumn('Col1', rend, text=0)
         tv.append_column(col)
@@ -802,8 +832,10 @@ This is the full code for this example::
         rend = gtk.CellRendererText()
         col = gtk.TreeViewColumn('Col2', rend, text=1)
         tv.append_column(col)
-    return
+        return
+
     pass # end of class
+ # ----------------------------------------------------------------------
 
  # running triplet
  m = MyModel()
@@ -815,8 +847,6 @@ When executed, this is what pops up:
 
 .. image:: images/mvc.png
 
-
-.. _adapters:
 
 --------
 Adapters
@@ -832,7 +862,7 @@ ideal place when setting up adapters. ::
 
  from gtkmvc import View
  class MyView (View):
-    glade = "example.glade"
+    builder = "example.glade"
     pass # end of class
  
 Glade file ``example.glade`` is shown here in ``glade-3``.

@@ -35,7 +35,7 @@ import os.path
 class ApplicationView (View):
     """A view for the top level window (application)"""
     
-    glade = os.path.join(utils.globals.GLADE_DIR, "converter.glade")
+    glade = os.path.join(utils.globals.GLADE_DIR, "app.glade")
     top = 'window_app'
     def __init__(self):
         View.__init__(self)

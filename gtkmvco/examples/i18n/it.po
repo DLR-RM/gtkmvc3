@@ -1,0 +1,31 @@
+# Italian translations for PACKAGE package
+# Traduzioni italiane per il pacchetto PACKAGE..
+# Copyright (C) 2012 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Me <EMAIL@ADDRESS>, 2012.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2012-01-30 12:35+0100\n"
+"PO-Revision-Date: 2012-01-30 12:36+0100\n"
+"Last-Translator: Me <EMAIL@ADDRESS>\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: red.py:19
+msgid "Yellow"
+msgstr "Giallo"
+
+#: red.ui.h:1
+msgid "Blue"
+msgstr "Blu"
+
+#: red.ui.h:2
+msgid "Green"
+msgstr "Verde"

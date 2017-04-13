@@ -1,0 +1,8 @@
+<glade-catalog name="pygtkmvc" depends="gtk+">
+  <glade-widget-classes>
+    <glade-widget-class name="HtmlTextView" parent="GtkTextView"/>
+  </glade-widget-classes>
+  <glade-widget-group name="gtkmvc" title="GTK MVC">
+    <glade-widget-class-ref name="HtmlTextView"/>
+  </glade-widget-group>
+</glade-catalog>
