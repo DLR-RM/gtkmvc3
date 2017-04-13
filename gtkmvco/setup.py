@@ -8,7 +8,7 @@
 from distutils.core import setup
 from gtkmvc import get_version
 
-setup(name="python-gtkmvc",
+setup(name="python-gtkmvc-dlr",
       version=".".join(map(str, get_version())), 
       description="Model-View-Controller and Observer patterns "\
                   "for developing pygtk-based applications",
